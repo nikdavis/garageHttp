@@ -50,6 +50,6 @@ func hello(c web.C, w http.ResponseWriter, r *http.Request) {
 
 func main() {
     goji.Get("/hello/:name", hello)
-    goji.Use(gojistatic.Static("/var/www/public", gojistatic.StaticOptions{}))
+    goji.Use(gojistatic.Static("public", gojistatic.StaticOptions{}))
     goji.Serve()
 }
