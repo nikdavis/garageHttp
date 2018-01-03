@@ -1,11 +1,11 @@
 ### To compile and run on for Raspberry Pi Zero W
 `GOOS="linux" GOARCH="arm" GOARM=6 golang build`
 
-`scp gojiExample pi@192.168.1.22:~/gojiExample`
+`scp garageServer pi@192.168.1.22:~/garageServer`
 
 ssh...
 
-`./gojiExample`
+`./garageServer`
 
 Note: I should perhaps attempt to figure out the best way to manage this service on the Pi long term, and maybe make the output a container.
 
