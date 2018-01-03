@@ -16,8 +16,13 @@ Note: I should perhaps attempt to figure out the best way to manage this service
 
 ### Resources
 [SmartThings LAN connected docs](http://docs.smartthings.com/en/latest/cloud-and-lan-connected-device-types-developers-guide/building-lan-connected-device-types/index.html)
+
 [Pi pinout](https://pinout.xyz/pinout/spi)
+
 [Pi power reqs](https://www.raspberrypi.org/help/faqs/#powerReqs)
+
 [Pi GPIO library](https://github.com/stianeikeland/go-rpio)
+
 [Relay overview](http://wiki.sunfounder.cc/index.php?title=2_Channel_5V_Relay_Module)
+
 [Garage door wiring](https://github.com/nikdavis/chamberlain-liftmaster-opener)
