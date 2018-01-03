@@ -11,7 +11,7 @@ import (
     "github.com/zenazn/goji/web"
     "github.com/hypebeast/gojistatic"
     "github.com/koron/go-ssdp"
-    // "github.com/stianeikeland/go-rpio"
+    "github.com/stianeikeland/go-rpio"
 )
 
 const RELAY_PIN = 14
@@ -38,6 +38,8 @@ func hello(c web.C, w http.ResponseWriter, r *http.Request) {
     var b []byte
     var err error
 
+    garageButton()
+
     if response.Error != nil {
         w.WriteHeader(response.Error.Status)
         b, _ = json.Marshal(*response.Error)
@@ -54,18 +56,22 @@ func hello(c web.C, w http.ResponseWriter, r *http.Request) {
 }
 
 func initializeRelayPin() {
-    // relayPin := rpio.Pin(RELAY_PIN)
-    // relayPin.High()
-    // relayPin.Output()
+    err := rpio.Open()
+    if err != nil {
+      panic(err)
+    }
+    relayPin := rpio.Pin(RELAY_PIN)
+    relayPin.High()
+    relayPin.Output()
 }
 
 func garageButton() {
-    // relayPin := rpio.Pin(RELAY_PIN)
-    //
-    // // Relay is active low -- Sunfounder, 2 channel, active low relays
-    // relayPin.Low()
+    relayPin := rpio.Pin(RELAY_PIN)
+
+    // Relay is active low -- Sunfounder, 2 channel, active low relays
+    relayPin.Low()
     time.Sleep(100 * time.Millisecond)
-    // relayPin.High()
+    relayPin.High()
 }
 
 func main() {
