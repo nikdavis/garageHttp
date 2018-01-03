@@ -5,12 +5,17 @@ import (
     "encoding/json"
     "net/http"
     "net"
+    "time"
 
     "github.com/zenazn/goji"
     "github.com/zenazn/goji/web"
     "github.com/hypebeast/gojistatic"
     "github.com/koron/go-ssdp"
+    // "github.com/stianeikeland/go-rpio"
 )
+
+const RELAY_PIN = 14
+const SERVER_PORT = 8000
 
 type HelloWorld struct {
     Hello string
@@ -21,9 +26,7 @@ type Error struct {
     Error string
 }
 
-type Payload interface {
-
-}
+type Payload interface {}
 
 type Response struct {
     Payload Payload
@@ -50,19 +53,31 @@ func hello(c web.C, w http.ResponseWriter, r *http.Request) {
     fmt.Fprint(w, string(b))
 }
 
-func main() {
-    // SSDP Server
-    externalIP := GetLocalIP()
-    port := "8000"
-    fmt.Println(externalIP)
+func initializeRelayPin() {
+    // relayPin := rpio.Pin(RELAY_PIN)
+    // relayPin.High()
+    // relayPin.Output()
+}
 
-    location := fmt.Sprintf("http://%s:%s/details.xml", externalIP, port)
+func garageButton() {
+    // relayPin := rpio.Pin(RELAY_PIN)
+    //
+    // // Relay is active low -- Sunfounder, 2 channel, active low relays
+    // relayPin.Low()
+    time.Sleep(100 * time.Millisecond)
+    // relayPin.High()
+}
+
+func main() {
+    initializeRelayPin()
+
+    // SSDP setup
     ad, err := ssdp.Advertise(
-        "urn:nivvis-co:device:garageDoor:0-1",                        // send as "ST"
-        "uuid:f29c575e-8ec0-4cd9-a359-1a4491bc4f79",                        // send as "USN"
-        location, // send as "LOCATION"
-        "go-ssdp sample",                   // send as "SERVER"
-        1800)                               // send as "maxAge" in "CACHE-CONTROL"
+        "urn:nivvis-co:device:garageDoor:0-1",
+        "uuid:f29c575e-8ec0-4cd9-a359-1a4491bc4f79",
+        getDeviceDetailsURL(),
+        "go-ssdp sample",
+        1800)
 
     if err != nil {
         panic(err)
@@ -73,13 +88,19 @@ func main() {
     goji.Use(gojistatic.Static("public", gojistatic.StaticOptions{}))
     goji.Serve() // block
 
+    // SSDP shutdown
     // send/multicast "byebye" message.
     ad.Bye()
     // teminate Advertiser.
     ad.Close()
 }
 
-func GetLocalIP() string {
+func getDeviceDetailsURL() string {
+  localIPAddr := getLocalIP()
+  return fmt.Sprintf("http://%s:%d/details.xml", localIPAddr, SERVER_PORT)
+}
+
+func getLocalIP() string {
     addrs, err := net.InterfaceAddrs()
     if err != nil {
         return ""
