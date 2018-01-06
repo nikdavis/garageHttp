@@ -14,38 +14,37 @@ import (
     "github.com/stianeikeland/go-rpio"
 )
 
-const RELAY_PIN = 14
+const RELAY_PIN_GARAGE_DOOR = 4
+const RELAY_PIN_LIGHT = 3
+var DEVICES = map[string]int{
+    "garageDoor":       RELAY_PIN_GARAGE_DOOR,
+    "garageDoorLight":  RELAY_PIN_LIGHT,
+}
 const SERVER_PORT = 8000
 
-type HelloWorld struct {
-    Hello string
-}
-
-type Error struct {
-    Status int
-    Error string
-}
-
-type Payload interface {}
-
 type Response struct {
-    Payload Payload
-    Error   *Error
+    Success bool
+    Status int
 }
 
-func hello(c web.C, w http.ResponseWriter, r *http.Request) {
-    response := Response{Payload: &HelloWorld{Hello: c.URLParams["name"]}}
+func fireDevice(c web.C, w http.ResponseWriter, r *http.Request) {
+    response := Response{Success: true, Status: 200}
+    device := c.URLParams["device"]
     var b []byte
     var err error
 
-    garageButton()
-
-    if response.Error != nil {
-        w.WriteHeader(response.Error.Status)
-        b, _ = json.Marshal(*response.Error)
+    if (DEVICES[device] != 0) {
+      cycleRelay(DEVICES[device])
     } else {
-        b, _ = json.Marshal(response.Payload)
+      response.Success = false
+      response.Status = 404
     }
+
+    if !response.Success {
+        w.WriteHeader(response.Status)
+    }
+
+    b, err = json.Marshal(response)
 
     if err != nil {
         http.Error(w, "(╯°□°）╯︵ ┻━┻   woops, we lost our cool", http.StatusInternalServerError)
@@ -60,18 +59,22 @@ func initializeRelayPin() {
     if err != nil {
       panic(err)
     }
-    relayPin := rpio.Pin(RELAY_PIN)
+
+    relayPin := rpio.Pin(RELAY_PIN_GARAGE_DOOR)
+    relayPin.High()
+    relayPin.Output()
+    relayPin = rpio.Pin(RELAY_PIN_LIGHT)
     relayPin.High()
     relayPin.Output()
 }
 
-func garageButton() {
-    relayPin := rpio.Pin(RELAY_PIN)
-
+func cycleRelay(pinId int) {
+    pin := rpio.Pin(pinId)
+    
     // Relay is active low -- Sunfounder, 2 channel, active low relays
-    relayPin.Low()
+    pin.Low()
     time.Sleep(100 * time.Millisecond)
-    relayPin.High()
+    pin.High()
 }
 
 func main() {
@@ -81,7 +84,18 @@ func main() {
     ad, err := ssdp.Advertise(
         "urn:nivvis-co:device:garageDoor:0-1",
         "uuid:f29c575e-8ec0-4cd9-a359-1a4491bc4f79",
-        getDeviceDetailsURL(),
+        getDeviceDetailsURL("garageDoor"),
+        "go-ssdp sample",
+        1800)
+
+    if err != nil {
+        panic(err)
+    }
+
+    ad, err = ssdp.Advertise(
+        "urn:nivvis-co:device:garageDoorLight:0-1",
+        "uuid:2dc7a051-0f66-45f0-9f7c-51bda3b9d894",
+        getDeviceDetailsURL("garageDoorLight"),
         "go-ssdp sample",
         1800)
 
@@ -90,7 +104,7 @@ func main() {
     }
 
     // Web server
-    goji.Get("/hello/:name", hello)
+    goji.Get("/fire/:device", fireDevice)
     goji.Use(gojistatic.Static("public", gojistatic.StaticOptions{}))
     goji.Serve() // block
 
@@ -101,9 +115,9 @@ func main() {
     ad.Close()
 }
 
-func getDeviceDetailsURL() string {
+func getDeviceDetailsURL(device string) string {
   localIPAddr := getLocalIP()
-  return fmt.Sprintf("http://%s:%d/details.xml", localIPAddr, SERVER_PORT)
+  return fmt.Sprintf("http://%s:%d/%sDetails.xml", localIPAddr, device, SERVER_PORT)
 }
 
 func getLocalIP() string {
