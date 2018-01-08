@@ -54,8 +54,9 @@ func fireDevice(c web.C, w http.ResponseWriter, r *http.Request) {
     fmt.Fprint(w, string(b))
 }
 
-func initializeRelayPin() {
+func initializeRelayPins() {
     err := rpio.Open()
+
     if err != nil {
       panic(err)
     }
@@ -70,7 +71,7 @@ func initializeRelayPin() {
 
 func cycleRelay(pinId int) {
     pin := rpio.Pin(pinId)
-    
+
     // Relay is active low -- Sunfounder, 2 channel, active low relays
     pin.Low()
     time.Sleep(100 * time.Millisecond)
@@ -78,24 +79,13 @@ func cycleRelay(pinId int) {
 }
 
 func main() {
-    initializeRelayPin()
+    initializeRelayPins()
 
     // SSDP setup
     ad, err := ssdp.Advertise(
         "urn:nivvis-co:device:garageDoor:0-1",
         "uuid:f29c575e-8ec0-4cd9-a359-1a4491bc4f79",
         getDeviceDetailsURL("garageDoor"),
-        "go-ssdp sample",
-        1800)
-
-    if err != nil {
-        panic(err)
-    }
-
-    ad, err = ssdp.Advertise(
-        "urn:nivvis-co:device:garageDoorLight:0-1",
-        "uuid:2dc7a051-0f66-45f0-9f7c-51bda3b9d894",
-        getDeviceDetailsURL("garageDoorLight"),
         "go-ssdp sample",
         1800)
 
@@ -117,7 +107,7 @@ func main() {
 
 func getDeviceDetailsURL(device string) string {
   localIPAddr := getLocalIP()
-  return fmt.Sprintf("http://%s:%d/%sDetails.xml", localIPAddr, device, SERVER_PORT)
+  return fmt.Sprintf("http://%s:%d/%sDetails.xml", localIPAddr, SERVER_PORT, device)
 }
 
 func getLocalIP() string {
